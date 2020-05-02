@@ -13,6 +13,11 @@ export class TasksService {
     private taskRepository: TaskRepository,
   ){}
 
+
+  async getTasks(filters: FiltersDto): Promise<Task[]> {
+    return await this.taskRepository.getTasks(filters);
+  }
+
   async getTaskById(id: number): Promise<Task> {
     const foundTask = await this.taskRepository.findOne(id);
     if (!foundTask) {
@@ -21,47 +26,28 @@ export class TasksService {
     return foundTask;
   }
 
-  
-  async createTask(createTaskDto: CreateTaskDto): Promise<Task> {
-    const { title, description } = createTaskDto;
-    const task: Task = new Task();
-    task.title = title;
-    task.description = description;
-    task.status = TaskStatus.OPEN;
+  async deleteTask(id: number): Promise<void> {
+    /* One way, this way make 2 query to the database, first veify that exist the task and before deleted */
+    /* const foundTask: Task = await this.getTaskById(id);
+    foundTask.remove(); */
+
+    /* Second way, faster, make only one request to database */
+    const result = await this.taskRepository.delete(id);
+    if (result.affected === 0) {
+      throw new NotFoundException(`Task with ID ${id} not found`);
+    }
+    
+  }
+
+  async updateTaskStatus(id: number, staus:TaskStatus): Promise<Task> {
+    const task = await this.getTaskById(id);
+    task.status = staus;
     await task.save();
     return task;
   }
-
-/*   getAllTasks() {
-    return this.tasks;
+  
+  async createTask(createTaskDto: CreateTaskDto): Promise<Task> {
+    return this.taskRepository.createTask(createTaskDto);
   }
 
-  getFiltersTasks(filtersDto: FiltersDto) {
-    const { search, status } = filtersDto;
-    let tasks: Task[] = this.getAllTasks();
-
-    if (search) {
-      tasks = tasks.filter(task => task.title.includes(search) || task.description.includes(search));
-    }
-
-    if (status) {
-      tasks = tasks.filter(task => task.status === status);
-    }
-
-    return tasks;
-  }
-
-
-
-
-  updateTaskStatus(id: string, staus:TaskStatus): Task {
-    const task = this.getTaskById(id);
-    task.status = staus;
-    return task;
-  }
-
-  deleteTaskById(id: string): void {
-    const foundTask = this.getTaskById(id);
-    this.tasks = this.tasks.filter(task => task.id !== foundTask.id);
-  } */
 }
